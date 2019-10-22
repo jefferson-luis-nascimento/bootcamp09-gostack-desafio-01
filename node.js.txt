@@ -1,0 +1,442 @@
+Configurando ambiente node.js com vs code e postgres
+com node.js, yarn e vs code  instalados e configurados
+
+Criar apasta da aplicação
+	entrar no diretório da aplicação
+	executar o comando yarn init -y para criar o packge.json
+
+Abrir o vs code com o comando:
+	code .
+
+Instalar o express: 
+	yarn add express
+
+Criar um novo arquivo chamado .gitignore e dentro do arquivo colocar node_modules e salvar
+
+Criar a pasta scr e dentro dela:
+	criar os arquivos app.js, server.js e routes.js
+	criar as pastas app e dentro dela:
+		criar as pastas controllers, models, middlewares
+	criar a pasta config
+	criar a pasta database e dentro dela:
+		criar as pastas migrations e seeds
+
+Instalar o sucrase e nodemon como dependencia de dev
+	sucrase: Usar a sintaxe de import e expot default
+	nodemon: Compilar automaticamente a cada alteração de código
+	executar o comando
+		yarn add sucrase nodemon -D
+	na pasta raiz da aplicação, criar o arquivo nodemon.json e incluir o seguinte conteúdo:
+		{
+			"execMap": {
+				"js": "node -r sucrase/register"
+			}
+		}
+	Observação: o comando serve pra que todo arquivo js, comece ser interpretado pelo sucrase para 
+		reconhecer os comando de import e export default.
+	Abrir o arquivo package.json e abaixo de license incluir os seguintes valores:
+		"scripts": {
+			"dev": "nodemon src/server.js",
+			"dev:debug": "nodemon --inspect src/server.js"
+		},
+	Ir na opção de debug do vs code e clicar no ícone de configuração (launch.json) e incluir e alterar os seguintes conteúdos:
+		alterar "request": "launch" para "request": "attach"
+		excluir a propriedade "program": "${workspaceFolder}/index.js"
+		incluir a propriedade "protocol": "inspector"
+		incluir a propriedade "restart": true
+		é pra ficar igual o código abaixo:
+		{
+		  // Use IntelliSense to learn about possible attributes.
+		  // Hover to view descriptions of existing attributes.
+		  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+		  "version": "0.2.0",
+		  "configurations": [
+		    {
+		      "type": "node",
+		      "request": "attach",
+		      "name": "Launch Program",
+		      "restart": true,
+		      "protocol": "inspector"
+		    }
+		  ]
+		}
+Codificando os arquivos básicos da aplicação:
+	abrir o arquivo app.js da pasta src e incluir o seguinte código:
+		import express from 'express';
+
+		import routes from './routes';
+
+		class App {
+		  constructor() {
+		    this.server = express();
+		    this.middlewares();
+		    this.routes();
+		  }
+
+		  middlewares() {
+		    this.server.use(express.json());
+		  }
+
+		  routes() {
+		    this.server.use(routes);
+		  }
+		}
+
+		export default new App().server;
+
+	abrir o arquivo server.js da pasta src e incluir o seguinte código:
+		import app from './app';
+
+ 		app.listen(3333);
+
+ 	abrir o arquivo routes.js da pasta src e incluir o seguinte código:
+ 		import { Router } from 'express';
+
+		const routes = new Router();
+
+		routes.get('/', (req, res) => {
+		  return res.json({message: "Hello World."});
+		});
+
+		export default routes;
+
+	"Com isso já temos uma aplicação funcionando"
+
+Configurando o postgres:
+	configurar o docker de acordo com com os seguintes comandos para o linux Ubuntu:
+		sudo apt-get remove docker docker-engine docker.io
+
+		sudo apt-get update
+
+		sudo apt-get install \
+		    apt-transport-https \
+		    ca-certificates \
+		    curl \
+		    software-properties-common
+
+	    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+	    "Verify that you now have the key with the fingerprint 9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88, by searching for the last 8 characters of the fingerprint."
+		sudo apt-key fingerprint 0EBFCD88
+
+		"pub   4096R/0EBFCD88 2017-02-22
+      	Key fingerprint = 9DC8 5822 9FC7 DD38 854A  E2D8 8D81 803C 0EBF CD88
+		uid                  Docker Release (CE deb) <docker@docker.com>
+		sub   4096R/F273FCD8 2017-02-22"
+
+		sudo add-apt-repository \
+			"deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+			$(lsb_release -cs) \
+			stable"
+
+		sudo apt-get update
+
+		sudo apt-get install docker-ce
+
+		apt-cache madison docker-ce
+
+		"Escolher a versão que vai ser instalada no comando abaixo:"
+
+		sudo apt-get install docker-ce=<VERSION>
+
+		sudo docker run hello-world
+
+		sudo groupadd docker
+
+		sudo usermod -aG docker $USER
+
+		"reiniciar o computador"
+
+		docker run hello-world
+
+		"Instalando o postgres"
+		docker run --name database -e POSTGRES_PASSWORD=docker -p 5432:5432 -d postgres:11
+
+		comandos docker (nome do docker: database):
+			listar todos docker em execução:
+				docker ps
+			parar um docker:
+				docker stop database
+			iniciar um docker:
+				docker start database
+			log do docker:
+				docker log
+
+		Instalar o postbird dessa url https://snapcraft.io/postbird
+		Entrar no postbird e criar o banco de Dados da aplicação
+
+Instalar dev dependencias pra padronizar o código:
+	Instalar ESlint, prettier e EditorConfig
+	Instalando o Eslint - Verificador de código pra saber se está no padrão:
+		yarn add eslint -D
+		após as instalação, executar o comando abaixo:
+		yarn eslint --init
+			escolher as seguintes opções na sequência:
+				How would you like to use Eslint?
+					To check syntax, find problems, and enforce code style
+				What type os modules does your project use?
+					Javascript modules (import/export)
+				Which framework does you project use?
+					None os these
+				Caso pergunte sobre typescript, escolher N
+				Where does your code run?
+					deselecionar Browser com tecla espaço e selecionar Node com espaço
+				How would you like to define a style for your project?
+					Use a popular style guide
+				Which style guide do you want to follow?
+					Airbnb (https://github.com/airbnb/javascript)
+				What the format do you want your config file to be in?
+					Javascript
+				Would you like to install them now with npm?
+					Y
+		após a instalação, excluir o arquivo package-lock.json
+		executar o comando yarn para reinstalar as dependencias
+			yarn
+		Abrir o gerenciado de extensões do vs code e procurar por eslint
+		Instalar caso não esteja instalado
+		Abrir settings.json e incluir as seguintes propriedade:
+			"eslint.autoFixOnSave": true,
+			"eslint.validate": [
+				{
+					"language": "javascript",
+					"autoFix": true
+				},
+				{
+					"language": "javascriptreact",
+					"autoFix": true
+				},
+				{
+					"language": "typecript",
+					"autoFix": true
+				},
+				{
+					"language": "typescript",
+					"autoFix": true
+				}
+			]
+		Abrir o arquivo .eslintrc.js na pasta raiz do projeto e incluir as seguintes regras:
+			module.exports = {
+			  env: {
+			    es6: true,
+			    node: true,
+			  },
+			  extends: [
+			    'airbnb-base',
+			    'prettier'
+			  ],
+			  plugins: [
+			  	'prettier'
+			  ],
+			  globals: {
+			    Atomics: 'readonly',
+			    SharedArrayBuffer: 'readonly',
+			  },
+			  parserOptions: {
+			    ecmaVersion: 2018,
+			    sourceType: 'module',
+			  },
+			  rules: {
+			  	"prettier/prettier": "error",
+			  	"class-methods-use-this": "off", // não utililiza o this nos métodos das classes
+			  	"no-param-reassign": "off", // permite receber parametros e alterar valores - para o sequelize poder funcionar
+			  	"camelcase": "off", //liberar pra deixar nformato nome_da_variável
+			  	"no-unused-vars": ["error", { "argsIgnorePattern": "next" }] //forçar a variavel next caso esteja sem uso			  	
+			  },
+			};
+		Instalar o prettier:
+			yarn add prettier eslint-config-prettier eslint-plugin-prettier -D
+		Criar o arquivo .prettierrc na raiz da aplicação e abrir o arquivo para edição e incluir o seguinte código:
+			{
+				"sngleQuote": true,
+				"trailingComma": "es5"
+			}
+		Opcional: corrigir todos os arquivos:
+			yarn eslint --fix src --ext .js
+	Instalar extensão do vs code EditorConfig
+		ir na raiz no projeto no vs code
+		clicar com o botão direito e escolher a opção Generate .editorconfig
+		abrir o arquivo .editorconfig para edição e deixar como o código abaixo:
+			root = true
+
+			[*]
+			indent_style = space
+			indent_size = 2
+			charset = utf-8
+			trim_trailing_whitespace = true
+			insert_final_newline = true
+Instalando e configurando o sequelize (que é um ORM para javascript)
+	criar o arquivo database.js em src/config
+	executar o comando para instalar o sequelize:
+		yarn add sequelize
+	apoś instalação, executar o seguinte comando:
+		yarn add sequelize-cli -D
+	criar o arquivo .sequelizerc na raiz do projeto para configurar os caminhos dos arquivos
+	abrir o arquivo  e incluir o seguinte código:
+		const { resolve } = require('path');
+
+		module.exports = {
+		  config: resolve(__dirname, 'src', 'config', 'database.js'),
+		  'models-path': resolve(__dirname, 'src', 'app', 'models'),
+		  'migrations-path': resolve(__dirname, 'src', 'database', 'migrations'),
+		  'seeders-path': resolve(__dirname, 'src', 'database', 'seeds'),
+		};
+
+	instalar as dependencias do sequelize para postgres pg e pg-hstore
+		yarn add pg pg-hstore
+	abrir o arquivo database.js e incluir o seguinte código:
+	 module.exports = {
+	 	dialect: 'postgres',
+	 	host: 'localhost',
+	 	user: 'postgres',
+	 	password: 'docker',
+	 	database: 'gympoint', //nome do bando que vai ser utilizado
+	 	define: {
+	 		timestamp: true, //obrigar a ter uma coluna created_at e updated_at em cada tabela do banco de dados
+	 		underscored: true,
+	 		underscoredAll: true
+	 	}
+	 }
+Criando migrations com sequelize-cli, exemplo para criação de usuarios
+	yarn sequelize migration:create --name=create-users
+No arquivo criado pelo comado acima, incluir o código abaixo:
+	module.exports = {
+		up: (queryInterface, Sequelize) => {
+			return queryInterface.createTable('users', {
+				id: {
+					type: Sequelize.INTEGER,
+					allowNull: false,
+					autoIncrement: true,
+					primaryKey: true
+				},
+				name: {
+					type: Sequelize.STRING,
+					allowNull: false
+				},
+				email: {
+					type: Sequelize.STRING,
+					allowNull: false,
+					unique: true
+				},
+				password_hash: {
+					type: Sequelize.STRING,
+					allowNull: false
+				},
+				provider: {
+					type: Sequelize.BOOLEAN,
+					defaultValue: false,
+					allowNull: false
+				},
+				created_at:{
+					type: Sequelize.DATE,
+					allowNull: false
+				},
+				updated_at: {
+					type: Sequelize.DATE,
+					allowNull: false
+				}
+			});
+		},
+		down: queryInterface => {
+			return queryInterface.dropTable('users');
+		},
+	}
+Executar a migration:
+	yarn sequelize db:migrate
+Rollback de migrations:
+	yarn sequelize db:migrate:undo //Desfaz a ultima migration
+	yarn sequelize db:migrate:undo:all //Desfaz todas as migrations
+Criar seed para usuário admin
+	yarn sequelize seed:generate --name admin-user
+Adicionar bcyptjs para criptografar a senha 
+	yarn add bcryptjs
+Adiconar o código abaixo no arquivo de seed gerado:
+	const bcrypt = require('bcryptjs');
+
+	module.exports = {
+	  up: QueryInterface => {
+	    return QueryInterface.bulkInsert(
+	      'users',
+	      [
+	        {
+	          name: 'Administrador',
+	          email: 'admin@gympoint.com',
+	          password_hash: bcrypt.hashSync('123456', 8),
+	          created_at: new Date(),
+	          updated_at: new Date(),
+	        },
+	      ],
+	      {}
+	    );
+	  },
+
+	  down: () => {},
+	};
+
+Implementar o model user
+	criar arquivo User.js na pasta src/models
+	após incluir o seguinte código
+		import Sequelize, { Model } from 'sequelize';
+
+		class User extends Model {
+		  static init(sequelize) {
+		    super.init(
+		      {
+		        name: Sequelize.STRING,
+		        email: Sequelize.STRING,
+		        password_hash: Sequelize.STRING,
+		        provider: Sequelize.BOOLEAN,
+		      },
+		      {
+		        sequelize,
+		      }
+		    );
+		  }
+		}
+
+		export default User;
+
+Implementar conex]ao com o Banco para acessar as model:
+	criar arquivo index.js na pasta src/database e incuir o seguinte código:
+		import Sequelize from 'sequelize';
+
+		import User from '../app/models/User';
+
+		import databaseConfig from '../config/database';
+
+		const models = [User];
+
+		class Database {
+			constructor(){
+				this.init();
+			}
+
+			init(){
+				this.connection = new Sequelize(databaseConfig);
+
+				models.map(model => model.init(this.connection));
+			}
+		}
+
+		export default new Database();
+
+Abrir o arquivo app.js da pasta src e incluir o código abaixo:
+	import './database';
+
+Implementar a autenticação e autorização para acesso a aplicação
+	instalar jwt:
+		yarn add jsonwebtoken
+
+implementar yup para vailidaçoes de schema
+	yarn add yup
+
+	validação com yup:
+		const schema = Yup.object().shape({
+	      email: Yup.string()
+	        .email()
+	        .required(),
+	      password: Yup.string().required(),
+	    });
+
+	    if (!(await schema.isValid(req.body))) {
+	      return res.status(400).json({ error: 'Validation fails.' });
+	    }
